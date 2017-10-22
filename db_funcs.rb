@@ -11,8 +11,8 @@ DB SCHEMA
 
 $db_data = {}
 
-def remove_schedule id
-  DB_Client.query("DELETE FROM #{$db_data[:table]} WHERE id = #{id}")
+def remove_scheduled id
+  DB_Client.query("DELETE FROM #{$db_data[:table]} WHERE reply_to_id = '#{id}'")
 end
 
 def db_from_file db = nil

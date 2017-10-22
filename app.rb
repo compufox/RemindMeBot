@@ -150,11 +150,10 @@ end
 #  helper functions
 #
 
-def reschedule_toot(time, text, reply_id, visibility)
+def reschedule_toot(time, reply_id, text, visibility)
   Scheduler.at time.localtime do
     post_reply(text, visibility, reply_id)
   end
-  puts 'toot rescheduled!'
 end
                                                                    
 def build_reply status, acct, text
@@ -189,7 +188,7 @@ def post_reply text, visibility, reply_to
   }
   
   RestClient.create_status text, options
-  
+  remove_scheduled reply_to
 end
 
 #
