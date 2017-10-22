@@ -37,21 +37,19 @@ def read_db
     if results.count > 0
       results.each do |row|
         
-        $teams[row["team"]] = {
-          user_access_token: row['access_token'],
-          bot_access_token: row['bot_access_token'],
-          botclient: create_slack_client(row['bot_access_token']),
-          userclient: create_slack_client(row['user_access_token'])
-        }
+        reschedule_toot(row['time_wanted'],
+                        row['reply_to_id'],
+                        row['content'],
+                        row['visibility'])
         
       end
     end
   rescue Mysql2::Error => mye
-    DB_Client.query "CREATE TABLE #{$db_data[:table]} (  )"
+    DB_Client.query "CREATE TABLE #{$db_data[:table]} ( time_wanted DATETIME, reply_to_id INT, content TEXT, visibility TEXT )"
   end
   
 end
 
-def write_db_data(team, user_token, bot_token)
-  DB_Client.query "INSERT INTO #{$db_data[:table]} VALUES ( '#{team}', '#{user_token}', '#{bot_token}' )"
+def write_db_data(time_wanted, reply_to, content, visibility)
+  DB_Client.query "INSERT INTO #{$db_data[:table]} VALUES ( #{time_wanted}, #{reply_to}, '#{content}', '#{visibility}' )"
 end

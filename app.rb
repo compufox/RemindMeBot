@@ -136,7 +136,7 @@ def parse_message input_toot
   
   if !errored
     reply_content = build_reply(input_toot.status, input_toot.account.acct, input.lstrip.chomp)
-#    write_db_data(time_wanted, input_toot.status.id, reply_content, input_toot.status.visibility)
+    write_db_data(time_wanted, input_toot.status.id, reply_content, input_toot.status.visibility)
     
     Scheduler.at time_wanted.localtime do
       post_reply(reply_content, input_toot.status.visibility, input_toot.status.id)
@@ -150,6 +150,11 @@ end
 #  helper functions
 #
 
+def reschedule_toot(time, text, reply_id, visibility)
+  Scheduler.at time.localtime do
+    post_reply(text, visibility, reply_id)
+  end
+end
                                                                    
 def build_reply status, acct, text
   # build a string out of the mentions (may remove later)
