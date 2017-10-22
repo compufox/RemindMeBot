@@ -80,9 +80,11 @@ def parse_message input_toot
   
   case input
 
+  # when we see that the user may have used shorthand :/
   when MisspellRegexp
     build_post_reply input_toot, ErrorMisspellMessage
-      
+
+    
   # when we match the relative regexp
   when RelativeRegexp
     match = input.scan(RelativeRegexp)
@@ -99,6 +101,7 @@ def parse_message input_toot
       build_post_reply input_toot, input.lstrip.chomp # lstrip to remove leading whitespace
     end
     build_post_reply input_toot, MessageReciept    
+
     
   # when we match the absolute regexp
   when AbsoluteRegexp
