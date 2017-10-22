@@ -2,6 +2,7 @@
 require 'active_support/core_ext/numeric/time'
 require 'rufus-scheduler'
 require 'mastodon'
+require_relative 'db_funcs'
 
 =begin
  TODO:
@@ -85,7 +86,11 @@ MessageReciept = %(I'll try to remind you then!)
 def parse_message input_toot
   # vv strips the html tags and the bot's name from the message text
   input = input_toot.status.content.gsub(/<("[^"]*"|'[^']*'|[^'">])*>/, '').gsub(/@#{MASTO_CONFIG[:acct]}/, '').chomp
-  
+
+  reply_content = ''
+  time_wanted = Time.zone.now # get current time
+
+
   
   case input
 
@@ -97,20 +102,15 @@ def parse_message input_toot
   # when we match the relative regexp
   when RelativeRegexp
     match = input.scan(RelativeRegexp)
-    t = Time.zone.now # get current time
     
     match.each do |m|
       m.each { |subOut|
         input.sub!(subOut, '') unless subOut.nil?  # go ahead and remove time string from input
       }
-      t += m[1].to_i.send(m[2]) # add up the times into the current
+      time_wanted += m[1].to_i.send(m[2]) # add up the times into the current
     end
 
-    Scheduler.at t.localtime do # schedule 
-      build_post_reply input_toot, input.lstrip.chomp # lstrip to remove leading whitespace
-    end
-    build_post_reply input_toot, MessageReciept    
-
+    errored = false
     
   # when we match the absolute regexp
   when AbsoluteRegexp
@@ -123,37 +123,61 @@ def parse_message input_toot
     input.gsub!(/^(\s+)?:+/, '')
 
     # build the time string 
-    time_str = "#{match[:tHours]}:#{match[:tMinutes] || 00}:#{match[:tSeconds] || 00}#{match[:tAPM] || ''} #{match[:TZ]}"
+    time_wanted = Time.zone.parse("#{match[:tHours]}:#{match[:tMinutes] || 00}:#{match[:tSeconds] || 00}#{match[:tAPM] || ''} #{match[:TZ]}")
+
+    errored = false
     
-    Scheduler.at Time.zone.parse(time_str).localtime do # parse it into a real time object and schedule
-       build_post_reply input_toot, input.lstrip.chomp
-    end
-    
-    build_post_reply input_toot, MessageReciept
   else
     # if we get here then that means we didn't match any regexp
     #  and that makes us sad :(
+    errored = true
     build_post_reply input_toot, ErrorMessage
- end
+  end
+  
+  if !errored
+    reply_content = build_reply(input_toot.status, input_toot.account.acct, input.lstrip.chomp)
+#    write_db_data(time_wanted, input_toot.status.id, reply_content, input_toot.status.visibility)
+    
+    Scheduler.at time_wanted.localtime do
+      post_reply(reply_content, input_toot.status.visibility, input_toot.status.id)
+    end
+    build_post_reply input_toot, MessageReciept
+  end
 end
 
-def build_post_reply toot, text
+                                                                   
+#
+#  helper functions
+#
 
+                                                                   
+def build_reply status, acct, text
   # build a string out of the mentions (may remove later)
-  mentions = toot.status.mentions.to_a.map! { |m|
+  mentions = status.mentions.to_a.map! { |m|
     "@#{m.acct}" unless m.acct == MASTO_CONFIG[:acct]
   }.join ' '
 
   # build up the actual content of the message
-  text = %(@#{toot.account.acct} #{mentions}
+  %(@#{acct} #{mentions}
 #{/(#{ErrorMessage})|(#{MessageReciept})|(#{ErrorMisspellMessage})/.match(text) ? '' : Header}
 
 #{text})
+end
+
+
+def build_post_reply toot, text
+  post_reply(build_reply(toot.status, toot.account.acct, text),
+             toot.status.visibility,
+             toot.status.id)
+end
+
+
+def post_reply text, visibility, reply_to
 
   options = {
 
-    visibility: toot.status.visibility,
-    in_reply_to_id: toot.status.id,
+    visibility: visibility,
+    in_reply_to_id: reply_to,
 #    spoiler_text: toot.status.spoiler_text || ''   <- doesn't work in mastodon-api as of right now
 
   }
