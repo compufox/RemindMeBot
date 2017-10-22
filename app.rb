@@ -11,6 +11,7 @@ require 'mastodon'
    if a user replies to that reciept toot with 'cancel' we just cancel the job
    confirm to the user that the toot has been deleted and then remove it from the hash
   )
+  add support for message like "@RemindMe tomorrow to ~whatever~"
 
 =end
 
@@ -33,8 +34,12 @@ Time.zone = 'UTC'
 Scheduler = Rufus::Scheduler.new
 TimeWordMisspell = [ 'hr', 'min', 'sec', 'wk' ]
 TimeMisspellString = '('+ TimeWordMisspell.join('|') + ')s?\b'
-TimeWords = [ 'hour', 'minute', 'day', 'second', 'week'] # add support for 'tomorrow'
+TimeWords = [ 'hour', 'minute', 'day', 'second', 'week'] 
 TimeString = '('+ TimeWords.join('|') + ')s?\b'
+
+#
+# compiles the regexes for later use
+#
 MisspellRegexp = Regexp.new(/
 #{TimeMisspellString}
 /ix)
@@ -54,6 +59,10 @@ AbsoluteRegexp = Regexp.new(/
 (?<tAPM>(A|P)M)?               # same for AM\PM
 \s?                            # white space
 (?<TZ>[[:alpha:]]{3})?/ix)     # gets timezone if it's there
+
+#
+# post-related messages
+#
 Header = %(⏰* REMINDER *⏰)
 ErrorMessage = %(Sorry, I didn't understand that :/
 
