@@ -6,7 +6,6 @@ require_relative 'db_funcs'
 
 =begin
  TODO:
-  add db funcs
   add way to cancel commands
   (set up a hash table with the toot id being the uid of the job?
    if a user replies to that reciept toot with 'cancel' we just cancel the job
