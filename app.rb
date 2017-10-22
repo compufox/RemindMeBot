@@ -37,6 +37,7 @@ TimeWordMisspell = [ 'hr', 'min', 'sec', 'wk' ]
 TimeMisspellString = '('+ TimeWordMisspell.join('|') + ')s?\b'
 TimeWords = [ 'hour', 'minute', 'day', 'second', 'week'] 
 TimeString = '('+ TimeWords.join('|') + ')s?\b'
+DB_Client = db_from_file
 
 #
 # compiles the regexes for later use
@@ -80,7 +81,7 @@ MessageReciept = %(I'll try to remind you then!)
 
 
 #
-# Sets message functions for parsing/building replies
+# Set message function for parsing/building replies
 #
 
 def parse_message input_toot
@@ -154,6 +155,7 @@ def reschedule_toot(time, text, reply_id, visibility)
   Scheduler.at time.localtime do
     post_reply(text, visibility, reply_id)
   end
+  puts 'toot rescheduled!'
 end
                                                                    
 def build_reply status, acct, text
@@ -194,6 +196,9 @@ end
 #
 # set up a loop to catch mentions
 #
+
+#load up old toots
+load_from_db
 
 StreamClient.user do |toot|
   next unless toot.kind_of? Mastodon::Notification
