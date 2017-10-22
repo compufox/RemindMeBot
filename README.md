@@ -1,6 +1,6 @@
 # RemindMeBot
 
-This is a complete reworking of the original RemindMe bot I made using python (hosted over [here](https://botsin.space/RemindMe))
+This is a complete reworking of the original RemindMe bot I made using python (hosted over [here](https://botsin.space/@RemindMe))
 
 I feel like this bot will be better able to parse messages and scheduling replies
 
