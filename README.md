@@ -4,7 +4,16 @@ This is a complete reworking of the original RemindMe bot I made using python (h
 
 I feel like this bot will be better able to parse messages and scheduling replies
 
-Feel free to help out if you want!
+Feel free to contribute if you want!
+
+# Running personal version
+
+To run the bot you need to specify an instance, a mastodon access token, and the username of the bot on the command line
+
+Something like:
+```bash
+BEARER='your_access_token_here' ACCT='BotNameHere' INSTANCE='https://your_cool_instan.ce' bundle exec ruby app.rb
+```
 
 
 ## Time input specifications
@@ -25,3 +34,4 @@ it will still parse out to the correct time
 
 - the ability to save the time into a database for restoring later (in case bot goes down)
 - way to cancel reminders that you've scheduled
+
