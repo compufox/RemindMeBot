@@ -32,6 +32,5 @@ it will still parse out to the correct time
 
 ## TODO
 
-- the ability to save the time into a database for restoring later (in case bot goes down)
 - way to cancel reminders that you've scheduled
 
