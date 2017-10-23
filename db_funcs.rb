@@ -5,7 +5,7 @@ require 'yaml'
 
 DB SCHEMA
 
- time_wanted DATETIME, reply_to_id NUMERIC, content TEXT, visibility TEXT
+ time_wanted DATETIME, reply_to_id TEXT, content TEXT, visibility TEXT, author TEXT
 
 =end
 
@@ -63,5 +63,6 @@ def load_from_db
 end
 
 def write_db_data(time_wanted, reply_to, content, visibility, author)
+  puts 'writing db_data'
   DB_Client.query "INSERT INTO #{$db_data[:table]} VALUES ( '#{time_wanted}', '#{reply_to}', '#{content}', '#{visibility}', '#{author}' )"
 end

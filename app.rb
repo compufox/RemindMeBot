@@ -171,6 +171,7 @@ def parse_message input_toot
     
     Scheduler.at time_wanted.localtime do
       post_reply(reply_content, input_toot.status.visibility, input_toot.status.id)
+      remove_scheduled input_toot.status.id
     end
     build_post_reply input_toot, MessageReciept
   end
@@ -184,6 +185,7 @@ end
 def reschedule_toot(time, reply_id, text, visibility)
   Scheduler.at time.localtime do
     post_reply(text, visibility, reply_id)
+    remove_scheduled reply_id
   end
 end
                                                                    
@@ -219,7 +221,6 @@ def post_reply text, visibility, reply_to
   }
   
   RestClient.create_status text, options
-  remove_scheduled reply_to
 end
 
 #
