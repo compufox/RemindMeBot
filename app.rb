@@ -32,11 +32,13 @@ StreamClient = Mastodon::Streaming::Client.new(base_url: MASTO_CONFIG[:instance]
 
 Time.zone = 'UTC'
 Scheduler = Rufus::Scheduler.new
+DB_Client = db_from_file
 TimeWordMisspell = [ 'hr', 'min', 'sec', 'wk' ]
 TimeMisspellString = '('+ TimeWordMisspell.join('|') + ')s?\b'
 TimeWords = [ 'hour', 'minute', 'day', 'second', 'week'] 
 TimeString = '('+ TimeWords.join('|') + ')s?\b'
-DB_Client = db_from_file
+CommandWords = [ 'cancel' ]
+CmdString = '!(?<tCommand>' + CommandWords.join('|') + ')'
 
 #
 # compiles the regexes for later use
@@ -54,13 +56,16 @@ AbsoluteRegexp = Regexp.new(/
 (?<tWord>at)?                 # catches the word to remove
 \s?                           # more whitespace
 (?<tHours>[[:digit:]]+):       # gets the hours
-(?<tMinutes>[[:digit:]]{2})(:  # gets the minutes
-(?<tSeconds>[[:digit:]]{2}))?  # gets seconds, if it's there
+(?<tMinutes>[[:digit:]]+)(:  # gets the minutes
+(?<tSeconds>[[:digit:]]+))?  # gets seconds, if it's there
 \s?                            # in case the input is HH:MM PM instead of HH:MMPM
 (?<tAPM>(A|P)M)?               # same for AM\PM
 \s?                            # white space
 (?<TZ>[[:alpha:]]{3})?/ix)     # gets timezone if it's there
-
+CommandRegexp = Regexp.new(/
+#{CmdString}
+/ix)
+                               
 #
 # post-related messages
 #
@@ -77,6 +82,10 @@ ErrorMisspellMessage = %(It looks like you may have tried to abbreviate a time s
 
 I actually can't parse that out so please use the full spelling of the word. Please and thank you!)
 MessageReciept = %(I'll try to remind you then!)
+CancelApproveMessage = %(Your reminder has been canceled!)
+CancelDenyMessage = %(Oh no, I couldn't cancel that reminder :/
+
+If you believe this to be in error please try again by replying to the reminder confirmation toot with !cancel)
 
 
 #
@@ -97,6 +106,24 @@ def parse_message input_toot
   # when we see that the user may have used shorthand :/
   when MisspellRegexp
     build_post_reply input_toot, ErrorMisspellMessage
+
+
+  when CommandRegexp
+    match = CommandRegexp.match(input)
+
+    case match[:tCommand]
+
+    when 'cancel'
+      parent = RestClient.status(input_toot.status.in_reply_to_id)
+      if cancel_scheduled parent.status.id, input_toot.account.acct
+        build_post_reply input_toot, CancelApproveMessage
+      else
+        build_post_reply input_toot, CancelDenyMessage
+      end
+
+      
+    end
+        
 
     
   # when we match the relative regexp
@@ -136,7 +163,7 @@ def parse_message input_toot
   
   if !errored
     reply_content = build_reply(input_toot.status, input_toot.account.acct, input.lstrip.chomp)
-    write_db_data(time_wanted, input_toot.status.id, reply_content, input_toot.status.visibility)
+    write_db_data(time_wanted, input_toot.status.id, reply_content, input_toot.status.visibility, input_toot.account.acct)
     
     Scheduler.at time_wanted.localtime do
       post_reply(reply_content, input_toot.status.visibility, input_toot.status.id)

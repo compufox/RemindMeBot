@@ -15,6 +15,18 @@ def remove_scheduled id
   DB_Client.query("DELETE FROM #{$db_data[:table]} WHERE reply_to_id = '#{id}'")
 end
 
+
+def cancel_scheduled id, author
+  DB_Client.query("SELECT * FROM #{$db_data[:table]} WHERE author = '#{author}'").each do |row|
+    if row['reply_to_id'] == id
+      remove_scheduled id
+      return true
+    end
+  end
+  return false
+end
+  
+
 def db_from_file db = nil
   $db_data = YAML.load_file(db || 'db.yml')
 
@@ -45,11 +57,11 @@ def load_from_db
       end
     end
   rescue Mysql2::Error => mye
-    DB_Client.query "CREATE TABLE #{$db_data[:table]} ( time_wanted DATETIME, reply_to_id TEXT, content TEXT, visibility TEXT )"
+    DB_Client.query "CREATE TABLE #{$db_data[:table]} ( time_wanted DATETIME, reply_to_id TEXT, content TEXT, visibility TEXT, author TEXT )"
   end
   
 end
 
-def write_db_data(time_wanted, reply_to, content, visibility)
-  DB_Client.query "INSERT INTO #{$db_data[:table]} VALUES ( '#{time_wanted}', '#{reply_to}', '#{content}', '#{visibility}' )"
+def write_db_data(time_wanted, reply_to, content, visibility, author)
+  DB_Client.query "INSERT INTO #{$db_data[:table]} VALUES ( '#{time_wanted}', '#{reply_to}', '#{content}', '#{visibility}', '#{author}' )"
 end
