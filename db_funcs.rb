@@ -65,5 +65,5 @@ def load_from_db
 end
 
 def write_db_data(time_wanted, reply_to, content, visibility, author, job_id)
-  DB_Client.query "INSERT INTO #{$db_data[:table]} VALUES ( '#{time_wanted}', '#{reply_to}', '#{content}', '#{visibility}', '#{author}', '#{job_id}' )"
+  DB_Client.query "INSERT INTO #{$db_data[:table]} VALUES ( \"#{time_wanted}\", \"#{reply_to}\", \"#{content}\", \"#{visibility}\", \"#{author}\", \"#{job_id}\" )"
 end
