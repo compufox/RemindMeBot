@@ -65,8 +65,11 @@ AbsoluteRegexp = Regexp.new(/
 \s?                            # white space
 (?<TZ>[[:alpha:]]{3})?/ix)     # gets timezone if it's there
 CommandRegexp = Regexp.new(/
-#{CmdString}
+.* #{CmdString} .*
 /ix)
+ThanksRegexp = Regexp.new(/
+.*?(thanks?( you)?
+/xi)
                                
 #
 # post-related messages
@@ -99,9 +102,12 @@ if using #2 I need at least hours, and at most HH:MM:SS. but I always need a 3 l
 
 If you want to cancel a reminder just reply to the message receipt with !cancel
 however only you can cancel your own reminder!)
+AppreciationMessage = %(No problem :3)
 
 MessageArray = [ ErrorMessage, ErrorMisspellMessage, MessageReceipt,
-                 CancelDenyMessage, CancelApproveMessage, HelpMessage ]
+                 CancelDenyMessage, CancelApproveMessage, HelpMessage,
+                 AppreciationMessage
+               ]
 
 #
 # Set message function for parsing/building replies
@@ -123,6 +129,7 @@ def parse_message input_toot
     build_post_reply input_toot, ErrorMisspellMessage
 
 
+  # if we see a command we should run it
   when CommandRegexp
     errored = true # we set this flag so we don't accidentally schedule our command
     
@@ -132,7 +139,7 @@ def parse_message input_toot
 
     when 'cancel'
       parent = RestClient.status(input_toot.status.in_reply_to_id)
-      if cancel_scheduled parent.in_reply_to_id, input_toot.account.acct
+      if cancel_scheduled parent.in_reply_to_id, input_toot.account.acct 
         build_post_reply input_toot, CancelApproveMessage
       else
         build_post_reply input_toot, CancelDenyMessage
@@ -158,6 +165,7 @@ def parse_message input_toot
     end
 
     errored = false
+
     
   # when we match the absolute regexp
   when AbsoluteRegexp
@@ -173,6 +181,11 @@ def parse_message input_toot
     time_wanted = Time.zone.parse("#{match[:tHours]}:#{match[:tMinutes] || 00}:#{match[:tSeconds] || 00}#{match[:tAPM] || ''} #{match[:TZ]}")
 
     errored = false
+
+    
+  # if someone says thanks then we should respond :3
+  when ThanksRegexp
+    build_post_reply input_toot, AppreciationMessage
     
   else
     # if we get here then that means we didn't match any regexp
