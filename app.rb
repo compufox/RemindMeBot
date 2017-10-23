@@ -111,6 +111,8 @@ def parse_message input_toot
 
 
   when CommandRegexp
+    errored = true # we set this flag so we don't accidentally schedule our command
+    
     match = CommandRegexp.match(input)
 
     case match[:tCommand]
