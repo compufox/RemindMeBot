@@ -16,6 +16,13 @@ BEARER='your_access_token_here' ACCT='BotNameHere' INSTANCE='https://your_cool_i
 ```
 
 
+## Features
+
+- scheduling reminders (see Time Input Specifications below)
+- canceling reminders that have yet to go off
+- saving/restoring to a (MySQL/MariaDB) database
+
+
 ## Time input specifications
 
 As of right now the bot is only able to parse times that come in certain formats:
@@ -32,5 +39,5 @@ it will still parse out to the correct time
 
 ## TODO
 
-- way to cancel reminders that you've scheduled
+- command to repeat a reminder
 
