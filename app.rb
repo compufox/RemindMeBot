@@ -8,7 +8,7 @@ require_relative 'db_funcs'
  TODO:
   add way to cancel commands
   (set up a hash table with the toot id being the uid of the job?
-   if a user replies to that reciept toot with 'cancel' we just cancel the job
+   if a user replies to that receipt toot with 'cancel' we just cancel the job
    confirm to the user that the toot has been deleted and then remove it from the hash
   )
   add support for message like "@RemindMe tomorrow to ~whatever~"
@@ -37,8 +37,10 @@ TimeWordMisspell = [ 'hr', 'min', 'sec', 'wk' ]
 TimeMisspellString = '('+ TimeWordMisspell.join('|') + ')s?\b'
 TimeWords = [ 'hour', 'minute', 'day', 'second', 'week'] 
 TimeString = '('+ TimeWords.join('|') + ')s?\b'
-CommandWords = [ 'cancel' ]
+CommandWords = [ 'cancel', 'help' ]
 CmdString = '!(?<tCommand>' + CommandWords.join('|') + ')'
+
+$schedule_jobs = {}
 
 #
 # compiles the regexes for later use
@@ -81,14 +83,25 @@ I understand formats like:
 ErrorMisspellMessage = %(It looks like you may have tried to abbreviate a time specification (e.g., 'minutes' to 'min', 'seconds' to 'sec')
 
 I actually can't parse that out so please use the full spelling of the word. Please and thank you!)
-MessageReciept = %(I'll try to remind you then!)
+MessageReceipt = %(I'll try to remind you then!)
 CancelApproveMessage = %(Your reminder has been canceled!)
 CancelDenyMessage = %(Oh no, I couldn't cancel that reminder :/
 
 If you believe this to be in error please try again by replying to the reminder confirmation toot with !cancel)
+HelpMessage = %(I have two ways for you to use me, relative and absolute:
+1- in 45 minutes feed dog
+2- at 16:20 EDT blaze it
 
-MessageArray = [ ErrorMessage, ErrorMisspellMessage, MessageReciept,
-                 CancelDenyMessage, CancelApproveMessage ]
+(pst: you don't need 'in' or 'at' either!)
+
+if using #1 I recognize minutes, seconds, hours, days and weeks
+if using #2 I need at least hours, and at most HH:MM:SS. but I always need a 3 letter timezone (defaults to UTC)
+
+If you want to cancel a reminder just reply to the message receipt with !cancel
+however only you can cancel your own reminder!)
+
+MessageArray = [ ErrorMessage, ErrorMisspellMessage, MessageReceipt,
+                 CancelDenyMessage, CancelApproveMessage, HelpMessage ]
 
 #
 # Set message function for parsing/building replies
@@ -124,6 +137,9 @@ def parse_message input_toot
       else
         build_post_reply input_toot, CancelDenyMessage
       end
+
+    when 'help'
+      build_post_reply input_toot, HelpMessage
 
       
     end
@@ -167,13 +183,21 @@ def parse_message input_toot
   
   if !errored
     reply_content = build_reply(input_toot.status, input_toot.account.acct, input.lstrip.chomp)
-    write_db_data(time_wanted, input_toot.status.id, reply_content, input_toot.status.visibility, input_toot.account.acct)
     
-    Scheduler.at time_wanted.localtime do
+    job = Scheduler.at time_wanted.localtime, :job => true do
       post_reply(reply_content, input_toot.status.visibility, input_toot.status.id)
       remove_scheduled input_toot.status.id
     end
-    build_post_reply input_toot, MessageReciept
+
+    write_db_data(time_wanted,
+                  input_toot.status.id,
+                  reply_content,
+                  input_toot.status.visibility,
+                  input_toot.account.acct,
+                  job.id)
+    $schedule_jobs[job.id] = job
+    
+    build_post_reply input_toot, MessageReceipt
   end
 end
 
@@ -183,10 +207,12 @@ end
 #
 
 def reschedule_toot(time, reply_id, text, visibility)
-  Scheduler.at time.localtime do
+  job = Scheduler.at time.localtime, :job => true do
     post_reply(text, visibility, reply_id)
     remove_scheduled reply_id
   end
+
+  $schedule_jobs[job.id] = job
 end
                                                                    
 def build_reply status, acct, text
@@ -199,7 +225,9 @@ def build_reply status, acct, text
   %(@#{acct} #{mentions}
 #{MessageArray.include?(text) ? '' : Header}
 
-#{text})
+#{text}
+
+#{text == MessageReceipt ? "Your reminder receipt is: #{1 + Random.rand(10000000000000) / Time.zone.now.to_i}" : ''})
 end
 
 

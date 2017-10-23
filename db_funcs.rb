@@ -5,7 +5,7 @@ require 'yaml'
 
 DB SCHEMA
 
- time_wanted DATETIME, reply_to_id TEXT, content TEXT, visibility TEXT, author TEXT
+ time_wanted DATETIME, reply_to_id TEXT, content TEXT, visibility TEXT, author TEXT, job_id TEXT
 
 =end
 
@@ -20,6 +20,8 @@ def cancel_scheduled id, author
   DB_Client.query("SELECT * FROM #{$db_data[:table]} WHERE author = '#{author}'").each do |row|
     if row['reply_to_id'] == id
       remove_scheduled id
+      $schedule_jobs[row['job_id']].unschedule
+      $schedule_jobs[row['job_id']].kill
       return true
     end
   end
@@ -57,11 +59,11 @@ def load_from_db
       end
     end
   rescue Mysql2::Error => mye
-    DB_Client.query "CREATE TABLE #{$db_data[:table]} ( time_wanted DATETIME, reply_to_id TEXT, content TEXT, visibility TEXT, author TEXT )"
+    DB_Client.query "CREATE TABLE #{$db_data[:table]} ( time_wanted DATETIME, reply_to_id TEXT, content TEXT, visibility TEXT, author TEXT, job_id TEXT )"
   end
   
 end
 
-def write_db_data(time_wanted, reply_to, content, visibility, author)
-  DB_Client.query "INSERT INTO #{$db_data[:table]} VALUES ( '#{time_wanted}', '#{reply_to}', '#{content}', '#{visibility}', '#{author}' )"
+def write_db_data(time_wanted, reply_to, content, visibility, author, job_id)
+  DB_Client.query "INSERT INTO #{$db_data[:table]} VALUES ( '#{time_wanted}', '#{reply_to}', '#{content}', '#{visibility}', '#{author}', '#{job_id}' )"
 end
