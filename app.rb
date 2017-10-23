@@ -87,6 +87,8 @@ CancelDenyMessage = %(Oh no, I couldn't cancel that reminder :/
 
 If you believe this to be in error please try again by replying to the reminder confirmation toot with !cancel)
 
+MessageArray = [ ErrorMessage, ErrorMisspellMessage, MessageReciept,
+                 CancelDenyMessage, CancelApproveMessage ]
 
 #
 # Set message function for parsing/building replies
@@ -115,7 +117,7 @@ def parse_message input_toot
 
     when 'cancel'
       parent = RestClient.status(input_toot.status.in_reply_to_id)
-      if cancel_scheduled parent.status.id, input_toot.account.acct
+      if cancel_scheduled parent.id, input_toot.account.acct
         build_post_reply input_toot, CancelApproveMessage
       else
         build_post_reply input_toot, CancelDenyMessage
@@ -191,7 +193,7 @@ def build_reply status, acct, text
 
   # build up the actual content of the message
   %(@#{acct} #{mentions}
-#{/(#{ErrorMessage})|(#{MessageReciept})|(#{ErrorMisspellMessage})/.match(text) ? '' : Header}
+#{MessageArray.include?(text) ? '' : Header}
 
 #{text})
 end
