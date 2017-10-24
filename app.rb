@@ -139,7 +139,7 @@ def parse_message input_toot
 
     when 'cancel'
       parent = RestClient.status(input_toot.status.in_reply_to_id)
-      if cancel_scheduled parent.in_reply_to_id, input_toot.account.acct 
+      if cancel_scheduled parent.in_reply_to_id, input_toot.account.acct
         build_post_reply input_toot, CancelApproveMessage
       else
         build_post_reply input_toot, CancelDenyMessage

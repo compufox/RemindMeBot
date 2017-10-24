@@ -18,7 +18,7 @@ end
 
 def cancel_scheduled id, author
   DB_Client.query("SELECT * FROM #{$db_data[:table]} WHERE author = '#{author}'").each do |row|
-    if row['reply_to_id'] == id
+    if row['reply_to_id'] == id.to_s
       remove_scheduled id
       $schedule_jobs[row['job_id']].unschedule
       $schedule_jobs[row['job_id']].kill
