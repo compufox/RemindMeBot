@@ -68,7 +68,7 @@ CommandRegexp = Regexp.new(/
 .* #{CmdString} .*
 /ix)
 ThanksRegexp = Regexp.new(/
-RemindMe@botsin.space\s(thanks?( you)?)
+RemindMe\s+(thanks?( you)?)
 /xi)
                                
 #
