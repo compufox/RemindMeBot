@@ -17,9 +17,6 @@ require_relative 'rm_constants'
   fix messages with mentions leaving the mention in the message. (it tacks all mentions onto
    the beginning, leaving the @username sans instance in the body of the message)
 
-  fix issue where if a user inputs a time (11:30) and it's meant to be tomorrow it runs the alert
-   immediatly instead of scheduling it properly
-
 =end
 
 #
