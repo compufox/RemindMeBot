@@ -52,7 +52,7 @@ CommandRegexp = Regexp.new(/
 .* #{CmdString} .*
 /ix)
 ThanksRegexp = Regexp.new(/
-RemindMe\s+(thanks?( you)?)
+\s+(thanks?( you)?)
 /xi)
                                
 #
