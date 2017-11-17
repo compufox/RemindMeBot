@@ -30,6 +30,8 @@ def parse_message input_toot
   # vv strips the html tags and the bot's name from the message text
   input = input_toot.status.content.gsub(/<("[^"]*"|'[^']*'|[^'">])*>/, '').gsub(/@#{MASTO_CONFIG[:acct]}/, '').chomp
 
+  print input
+  
   reply_content = ''
   time_wanted = Time.zone.now # get current time
 
@@ -92,6 +94,8 @@ def parse_message input_toot
 
     # build the time string 
     time_wanted = Time.zone.parse("#{match[:tHours]}:#{match[:tMinutes] || 00}:#{match[:tSeconds] || 00}#{match[:tAPM] || ''} #{match[:TZ]}")
+
+    time_wanted += 1.day if Time.zone.now > time_wanted
 
     errored = false
 
