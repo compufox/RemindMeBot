@@ -103,6 +103,7 @@ def parse_message input_toot
   # if someone says thanks then we should respond :3
   when ThanksRegexp
     build_post_reply input_toot, AppreciationMessage
+    errored = true # this is to sneak past the check down below so we don't send a few extra messages ;P
     
   else
     # if we get here then that means we didn't match any regexp
@@ -111,7 +112,7 @@ def parse_message input_toot
     build_post_reply input_toot, ErrorMessage
   end
   
-  if !errored
+  if not errored
     reply_content = build_reply(input_toot.status, input_toot.account.acct, input.lstrip.chomp)
     
     job = Scheduler.at time_wanted.localtime, :job => true do
