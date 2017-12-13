@@ -11,7 +11,8 @@ require_relative 'rm_constants'
   (set up a hash table with the toot id being the uid of the job?
    if a user replies to that receipt toot with 'cancel' we just cancel the job
    confirm to the user that the toot has been deleted and then remove it from the hash
-  )
+  )  <- may be a better way to do it, seeing as how I didn't actually implement this
+
   add support for message like "@RemindMe tomorrow to ~whatever~"
 
   fix messages with mentions leaving the mention in the message. (it tacks all mentions onto
@@ -68,11 +69,12 @@ def parse_message input_toot
   # when we match the relative regexp
   when RelativeRegexp
     match = input.scan(RelativeRegexp)
-    
+
     match.each do |m|
       m.each { |subOut|
-        input.sub!(subOut, '') unless subOut.nil?  # go ahead and remove time string from input
+        input.sub!(subOut.split[0], '') unless subOut.nil?  # go ahead and remove time string from input
       }
+
       time_wanted += m[1].to_i.send(m[2]) # add up the times into the current
     end
 

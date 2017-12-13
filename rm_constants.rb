@@ -19,7 +19,7 @@ Scheduler = Rufus::Scheduler.new
 DB_Client = db_from_file
 TimeWordMisspell = [ 'hr', 'min', 'sec', 'wk' ]
 TimeMisspellString = '('+ TimeWordMisspell.join('|') + ')s?\b'
-TimeWords = [ 'hour', 'minute', 'day', 'second', 'week'] 
+TimeWords = [ 'hour', 'minute', 'day', 'second', 'week', 'tomorrow(?<tTmRel>\s(morning|afternoon|evening))?'] 
 TimeString = '('+ TimeWords.join('|') + ')s?\b'
 CommandWords = [ 'cancel', 'help' ]
 CmdString = '!(?<tCommand>' + CommandWords.join('|') + ')'
@@ -32,12 +32,11 @@ $schedule_jobs = {}
 MisspellRegexp = Regexp.new(/
 #{TimeMisspellString}
 /ix)
+
 RelativeRegexp = Regexp.new(/
-(?<tWord>in)?                    # catch the word
-\s?                              # more whitespace
-((?<tNumber>[[:digit:]]+)         # get how many ever numbers
-\s                                # space
-(?<tInterval>#{TimeString}))+/ix) # any word matched by the words in TimeWords
+((?<tWord>in?\s)?
+(?<tNumber>[[:digit:]]+)\s)?         
+(?<tInterval>#{TimeString})+/ix) # any word matched by the words in TimeWords
 AbsoluteRegexp = Regexp.new(/
 (?<tWord>at)?                 # catches the word to remove
 \s?                           # more whitespace
@@ -47,7 +46,7 @@ AbsoluteRegexp = Regexp.new(/
 \s?                            # in case the input is HH:MM PM instead of HH:MMPM
 (?<tAPM>(A|P)M)?               # same for AM\PM
 \s?                            # white space
-(?<TZ>[[:alpha:]]{3})?/ix)     # gets timezone if it's there
+(?<TZ>[[:alpha:]]{3+})?/ix)     # gets timezone if it's there
 CommandRegexp = Regexp.new(/
 .* #{CmdString} .*
 /ix)
