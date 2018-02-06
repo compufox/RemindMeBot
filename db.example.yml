@@ -1,0 +1,6 @@
+:host: 'localhost'
+:port: 3306
+:user: 'remindme'
+:pass: 'hunter2'
+:database: 'remindme'
+:table: 'reminders'

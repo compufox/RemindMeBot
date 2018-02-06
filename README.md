@@ -8,7 +8,14 @@ Feel free to contribute if you want!
 
 # Running personal version
 
-To run the bot you need to specify an instance, a mastodon access token, and the username of the bot on the command line
+You'll need to set your database settings in `db.yml`. An example is provided in `db.example.yml`.
+
+```bash
+cp db.example.yml db.yml
+$EDITOR db.yml
+```
+
+When running the bot you need to specify an instance, a mastodon access token, and the username of the bot on the command line
 
 Something like:
 ```bash
