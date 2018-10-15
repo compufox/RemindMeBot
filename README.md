@@ -19,7 +19,7 @@ When running the bot you need to specify an instance, a mastodon access token, a
 
 Something like:
 ```bash
-BEARER='your_access_token_here' ACCT='BotNameHere' INSTANCE='https://your_cool_instan.ce' bundle exec ruby app.rb
+BEARER='your_access_token_here' INSTANCE='https://your_cool_instan.ce' bundle exec ruby app.rb
 ```
 
 
