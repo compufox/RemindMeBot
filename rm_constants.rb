@@ -3,16 +3,16 @@
 # Set up constants
 #
 
+RestClient = Mastodon::REST::Client.new(base_url: ENV['INSTANCE'],
+                                      bearer_token: ENV['BEARER'])
+StreamClient = Mastodon::Streaming::Client.new(base_url: ENV['INSTANCE'],
+                                             bearer_token: ENV['BEARER'])
+
 MASTO_CONFIG = {
   access: ENV['BEARER'],
-  acct: ENV['ACCT'],
+  acct: RestClient.verify_credentials().acct,
   instance: ENV['INSTANCE']
 }
-
-RestClient = Mastodon::REST::Client.new(base_url: MASTO_CONFIG[:instance],
-                                      bearer_token: MASTO_CONFIG[:access])
-StreamClient = Mastodon::Streaming::Client.new(base_url: MASTO_CONFIG[:instance],
-                                             bearer_token: MASTO_CONFIG[:access])
 
 Time.zone = 'UTC'
 Scheduler = Rufus::Scheduler.new
