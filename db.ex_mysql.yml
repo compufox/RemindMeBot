@@ -1,3 +1,4 @@
+:type: 'mysql'     -- right now this can be either 'mysql' or 'sqlite'
 :host: 'localhost'
 :port: 3306
 :user: 'remindme'

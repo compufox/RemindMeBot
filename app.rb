@@ -137,6 +137,10 @@ end
 #
 
 def reschedule_toot(time, reply_id, text, visibility)
+  if time.is_a? String
+    time = ActiveSupport::TimeZone['UTC'].parse(time)
+  end
+
   job = Scheduler.at time.localtime, :job => true do
     post_reply(text, visibility, reply_id)
     remove_scheduled reply_id

@@ -8,11 +8,10 @@ Feel free to contribute if you want!
 
 # Running personal version
 
-You'll need to set your database settings in `db.yml`. An example is provided in `db.example.yml`.
+You'll need to set your database settings in `db.yml`. Examples are provided for MySQL and SQLite configs (`db.ex_mysql.yml` and `db.ex_sqlite.yml`, respectively)
 
 ```bash
-cp db.example.yml db.yml
-$EDITOR db.yml
+cp db.ex_sqlite.yml db.yml
 ```
 
 When running the bot you need to specify an instance, a mastodon access token, and the username of the bot on the command line
@@ -27,7 +26,7 @@ BEARER='your_access_token_here' INSTANCE='https://your_cool_instan.ce' bundle ex
 
 - scheduling reminders (see Time Input Specifications below)
 - canceling reminders that have yet to go off
-- saving/restoring to a (MySQL/MariaDB) database
+- saving/restoring to a (MySQL/MariaDB/SQLite) database
 
 
 ## Time input specifications
