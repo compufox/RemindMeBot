@@ -4,8 +4,8 @@
 #
 
 RestClient = Mastodon::REST::Client.new(base_url: ENV['INSTANCE'],
-                                      bearer_token: ENV['BEARER'])
-StreamClient = Mastodon::Streaming::Client.new(base_url: ENV['INSTANCE'],
+                                        bearer_token: ENV['BEARER'])
+StreamClient = Mastodon::Streaming::Client.new(base_url: RestClient.instance().attributes['urls']['streaming_api'].gsub(/wss?/, 'https'),
                                              bearer_token: ENV['BEARER'])
 
 MASTO_CONFIG = {
