@@ -10,6 +10,8 @@ DB SCHEMA
 
 =end
 
+# this extends the ResultSet class in SQLite3
+#  to provide a count function
 module SQLite3
   class ResultSet
     def count
@@ -26,7 +28,8 @@ end
 
 
 def cancel_scheduled id, author
-  DB_Client.query("SELECT * FROM #{$db_data[:table]} WHERE author = '#{author}'").each do |row|
+  stmt = DB_Client.prepare("SELECT * FROM #{$db_data[:table]} WHERE author = ?")
+  stmt.execute(author).each do |row|
     if row['reply_to_id'] == id.to_s
       remove_scheduled id
       $schedule_jobs[row['job_id']].unschedule

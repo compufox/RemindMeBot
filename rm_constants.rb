@@ -46,7 +46,7 @@ AbsoluteRegexp = Regexp.new(/
 \s?                            # in case the input is HH:MM PM instead of HH:MMPM
 (?<tAPM>(A|P)M)?               # same for AM\PM
 \s?                            # white space
-(?<TZ>[[:alpha:]]{3+})?/ix)     # gets timezone if it's there
+(?<TZ>[[:alpha:]]{3,})?/ix)     # gets timezone if it's there
 CommandRegexp = Regexp.new(/
 .* #{CmdString} .*
 /ix)
