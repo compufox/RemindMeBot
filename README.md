@@ -14,7 +14,7 @@ You'll need to set your database settings in `db.yml`. Examples are provided for
 cp db.ex_sqlite.yml db.yml
 ```
 
-When running the bot you need to specify an instance, a mastodon access token, and the username of the bot on the command line
+When running the bot you need to specify an instance and provide a mastodon access token on the command line
 
 Something like:
 ```bash
