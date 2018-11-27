@@ -8,7 +8,7 @@ Feel free to contribute if you want!
 
 # Running personal version
 
-You'll need to set your database settings in `db.yml`. Examples are provided for MySQL and SQLite configs (`db.ex_mysql.yml` and `db.ex_sqlite.yml`, respectively)
+You'll need to set your database settings in `db.yml`. Examples are provided for MySQL and SQLite configs (`db.ex_mysql.yml` and `db.ex_sqlite.yml`, respectively). For a bare bones SQLite setup do this:
 
 ```bash
 cp db.ex_sqlite.yml db.yml
@@ -46,4 +46,5 @@ it will still parse out to the correct time
 ## TODO
 
 - command to repeat a reminder
-
+- newlines not returned properly in reminder status?
+- make bot less spammy with !help message
