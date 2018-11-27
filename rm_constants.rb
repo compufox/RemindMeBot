@@ -86,7 +86,7 @@ if using #1 I recognize minutes, seconds, hours, days and weeks
 if using #2 I need at least hours, and at most HH:MM:SS. but I always need a 3 letter timezone (defaults to UTC)
 
 If you want to cancel a reminder just reply to the message receipt with !cancel
-however only you can cancel your own reminder!)
+Reply to your receipt with !until to get a countdown for your reminder!)
 AppreciationMessage = %(No problem :3)
 UntilMessage = %(Your reminder will be sent in )
 

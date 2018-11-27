@@ -200,7 +200,9 @@ def build_reply status, acct, text
 
 #{text}
 
-#{text == MessageReceipt ? "Your reminder receipt is: #{1 + Random.rand(10000000000000) / Time.zone.now.to_i}" : ''})
+#{text == MessageReceipt ? "Your reminder receipt is: #{1 + Random.rand(10000000000000) / Time.zone.now.to_i}" : ''}
+
+#{text == MessageReceipt ? 'Reply to this with !until to get updates on when your reminder will go off!' : ''})
 end
 
 
