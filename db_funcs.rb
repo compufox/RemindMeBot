@@ -20,6 +20,7 @@ module SQLite3
   end
 end
 
+# hold database info
 $db_data = {}
 
 def remove_scheduled id
@@ -39,7 +40,7 @@ def cancel_scheduled id, author
   end
   return false
 end
-  
+
 
 def db_from_file db = nil
   $db_data = YAML.load_file(db || 'db.yml')
@@ -77,7 +78,8 @@ def load_from_db
         reschedule_toot(row['time_wanted'],
                         row['reply_to_id'],
                         row['content'],
-                        row['visibility'])
+                        row['visibility'],
+                        row['job_id'])
         
       end
     end
@@ -92,12 +94,17 @@ def load_from_db
 end
 
 def write_db_data(time_wanted, reply_to, content, visibility, author, job_id)
-  stmt = DB_Client.prepare "INSERT INTO #{$db_data[:table]} VALUES (?, ?, ?, ?, ?, ?)"
-
   begin
-    stmt.execute(time_wanted, reply_to, content, visibility, author, job_id)
+    SQLInsertStmt.execute(time_wanted, reply_to, content, visibility, author, job_id)
 
+  # if we run into this then we convert the time_wanted to a string because sqlite is weird
+  #  this is bad and should probably be fixed
   rescue RuntimeError
-    stmt.execute(time_wanted.to_s, reply_to, content, visibility, author, job_id)
+    SQLInsertStmt.execute(time_wanted.to_s, reply_to, content, visibility, author, job_id)
   end
+end
+
+def get_jobid(status_id)
+  stmt = DB_Client.prepare("SELECT job_id FROM #{$db_data[:table]} WHERE reply_to_id = ?")
+  return stmt.execute(status_id).first['job_id']
 end

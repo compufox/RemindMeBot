@@ -21,8 +21,10 @@ TimeWordMisspell = [ 'hr', 'min', 'sec', 'wk' ]
 TimeMisspellString = '('+ TimeWordMisspell.join('|') + ')s?\b'
 TimeWords = [ 'hour', 'minute', 'day', 'second', 'week', 'tomorrow(?<tTmRel>\s(morning|afternoon|evening))?'] 
 TimeString = '('+ TimeWords.join('|') + ')s?\b'
-CommandWords = [ 'cancel', 'help' ]
+CommandWords = [ 'cancel', 'help', 'until' ]
 CmdString = '!(?<tCommand>' + CommandWords.join('|') + ')'
+
+SQLInsertStmt = DB_Client.prepare "INSERT INTO #{$db_data[:table]} VALUES (?, ?, ?, ?, ?, ?)"
 
 $schedule_jobs = {}
 
@@ -86,9 +88,10 @@ if using #2 I need at least hours, and at most HH:MM:SS. but I always need a 3 l
 If you want to cancel a reminder just reply to the message receipt with !cancel
 however only you can cancel your own reminder!)
 AppreciationMessage = %(No problem :3)
+UntilMessage = %(Your reminder will be sent in )
 
 MessageArray = [ ErrorMessage, ErrorMisspellMessage, MessageReceipt,
                  CancelDenyMessage, CancelApproveMessage, HelpMessage,
-                 AppreciationMessage
+                 AppreciationMessage, UntilMessage
                ]
 

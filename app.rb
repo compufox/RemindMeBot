@@ -61,6 +61,45 @@ def parse_message input_toot
     when 'help'
       build_post_reply input_toot, HelpMessage
 
+    when 'until'
+      # get the grandparent of our input status
+      ancestor = RestClient.status(RestClient.status(input_toot.status.in_reply_to_id).in_reply_to_id)
+
+      # get the jobid from our db and retrieve our job from the
+      #  schedule_jobs hash
+      jobid = get_jobid(ancestor.id)
+      o_job = $schedule_jobs.select { |k, v|
+        k == jobid
+      }[jobid]
+
+      # if we actually found the job
+      if not o_job.nil?
+        # o_job.original is the time we scheduled the post
+        # returns the number of seconds until the scheduled post fires
+        hours_until = ((o_job.original - Time.zone.now.localtime) / 3600).to_i # convert to int to strip frac
+        mins_until  = (((o_job.original - Time.zone.now.localtime) / 3600) % 1 * 60).round
+        
+        # reply with a message telling them how long until their reminder!
+        if mins_until > 0 || hours_until > 0
+
+          rsp = ""
+
+          # because english is a fuck
+          if hours_until > 0
+            rsp += "#{hours_until} hour#{hours_until > 1 ? 's' : ''}"
+          end
+
+          if mins_until > 0
+            rsp += " #{mins_until} minute#{mins_until > 1 ? 's' : ''}"
+          end
+          
+          build_post_reply input_toot, UntilMessage + rsp
+        else
+          build_post_reply input_toot, UntilMessage + 'less than a minute!'
+        end
+      else
+        puts 'could not find job :shrug:'
+      end
       
     end
         
@@ -136,7 +175,7 @@ end
 #  helper functions
 #
 
-def reschedule_toot(time, reply_id, text, visibility)
+def reschedule_toot(time, reply_id, text, visibility, job_id)
   if time.is_a? String
     time = ActiveSupport::TimeZone['UTC'].parse(time)
   end
@@ -146,7 +185,7 @@ def reschedule_toot(time, reply_id, text, visibility)
     remove_scheduled reply_id
   end
 
-  $schedule_jobs[job.id] = job
+  $schedule_jobs[job_id] = job
 end
                                                                    
 def build_reply status, acct, text
