@@ -3,43 +3,7 @@
 # Set up constants
 #
 
-Time.zone = 'UTC'
-Scheduler = Rufus::Scheduler.new
-DB_Client = db_from_file; load_from_db
-TimeWordMisspell = [ 'hr', 'min', 'sec', 'wk' ]
-TimeMisspellString = '('+ TimeWordMisspell.join('|') + ')s?\b'
-TimeWords = [ 'hour', 'minute', 'day', 'second', 'week' ] 
-TimeString = '('+ TimeWords.join('|') + ')s?\b'
 
-SQLInsertStmt = DB_Client.prepare "INSERT INTO #{$db_data[:table]} VALUES (?, ?, ?, ?, ?, ?)"
-
-$schedule_jobs = {}
-
-#
-# compiles the regexes for later use
-#
-MisspellRegexp = Regexp.new(/
-#{TimeMisspellString}
-/ix)
-
-RelativeRegexp = Regexp.new(/
-((?<tWord>in?\s)?
-(?<tNumber>[[:digit:]]+)\s)?         
-(?<tInterval>#{TimeString})+/ix) # any word matched by the words in TimeWords
-AbsoluteRegexp = Regexp.new(/
-(?<tWord>at)?                 # catches the word to remove
-\s?                           # more whitespace
-(?<tHours>[[:digit:]]+):       # gets the hours
-(?<tMinutes>[[:digit:]]+)(:  # gets the minutes
-(?<tSeconds>[[:digit:]]+))?  # gets seconds, if it's there
-\s?                            # in case the input is HH:MM PM instead of HH:MMPM
-(?<tAPM>(A|P)M)?               # same for AM\PM
-\s?                            # white space
-(?<TZ>[[:alpha:]]{3,})?/ix)     # gets timezone if it's there
-ThanksRegexp = Regexp.new(/
-\s+(thanks?( you)?)
-/xi)
-                               
 #
 # post-related messages
 #
@@ -67,8 +31,44 @@ Reply to your receipt with !until to get a countdown for your reminder!)
 AppreciationMessage = %(No problem :3)
 UntilMessage = %(Your reminder will be sent in )
 
-MessageArray = [ ErrorMessage, ErrorMisspellMessage, MessageReceipt,
-                 CancelDenyMessage, CancelApproveMessage, HelpMessage,
-                 AppreciationMessage, UntilMessage
-               ]
+#
+# general constants
+#
 
+$schedule_jobs = {}
+
+RemindMe = Elephrame::Bots::Command.new '!', HelpMessage
+Time.zone = 'UTC'
+Scheduler = Rufus::Scheduler.new
+DB_Client = db_from_file; load_from_db
+TimeWordMisspell = [ 'hr', 'min', 'sec', 'wk' ]
+TimeMisspellString = '('+ TimeWordMisspell.join('|') + ')s?\b'
+TimeWords = [ 'hour', 'minute', 'day', 'second', 'week' ] 
+TimeString = '('+ TimeWords.join('|') + ')s?\b'
+
+SQLInsertStmt = DB_Client.prepare "INSERT INTO #{$db_data[:table]} VALUES (?, ?, ?, ?, ?, ?)"
+
+#
+# compiles the regexes for later use
+#
+MisspellRegexp = Regexp.new(/
+#{TimeMisspellString}
+/ix)
+
+RelativeRegexp = Regexp.new(/
+((?<tWord>in?\s)?
+(?<tNumber>[[:digit:]]+)\s)?         
+(?<tInterval>#{TimeString})+/ix) # any word matched by the words in TimeWords
+AbsoluteRegexp = Regexp.new(/
+(?<tWord>at)?                 # catches the word to remove
+\s?                           # more whitespace
+(?<tHours>[[:digit:]]+):       # gets the hours
+(?<tMinutes>[[:digit:]]+)(:  # gets the minutes
+(?<tSeconds>[[:digit:]]+))?  # gets seconds, if it's there
+\s?                            # in case the input is HH:MM PM instead of HH:MMPM
+(?<tAPM>(A|P)M)?               # same for AM\PM
+\s?                            # white space
+(?<TZ>[[:alpha:]]{3,})?/ix)     # gets timezone if it's there
+ThanksRegexp = Regexp.new(/
+\s+(thanks?( you)?)
+/xi)

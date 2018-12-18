@@ -2,9 +2,9 @@
 require 'active_support/core_ext/numeric/time'
 require 'rufus-scheduler'
 require 'elephrame'
+require_relative 'helpers'
 require_relative 'db_funcs'
 require_relative 'rm_constants'
-require_relative 'helpers'
 
 =begin
  TODO:
@@ -20,7 +20,6 @@ require_relative 'helpers'
 
 =end
 
-RemindMe = Elephrame::Bots::Command.new '!', HelpMessage
 
 # adds cancel command
 RemindMe.add_command 'cancel' do |bot, data, status|
