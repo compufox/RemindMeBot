@@ -23,13 +23,15 @@ require_relative 'rm_constants'
 
 # adds cancel command
 RemindMe.add_command 'cancel' do |bot, data, status|
-  receipt = bot.find_ancestor(status.id, 2)
-  
-  if cancel_scheduled(receipt.in_reply_to_id,
-                      receipt.account.acct)
-    bot.reply(CancelApproveMessage)
-  else
-    bot.reply(CancelDenyMessage)
+  receipt = bot.find_ancestor(status.id, 3)
+
+  unless receipt.nil?
+    if cancel_scheduled(receipt.in_reply_to_id,
+                        status.account.acct)
+      bot.reply(CancelApproveMessage)
+    else
+      bot.reply(CancelDenyMessage)
+    end
   end
 end
 
@@ -38,7 +40,7 @@ end
 RemindMe.add_command 'until' do |bot, data, status|
   receipt = bot.find_ancestor(status.id, 3)
   
-  unless reciept.nil?
+  unless receipt.nil?
     # get the jobid from our db and retrieve our job from the
     #  schedule_jobs hash
     jobid = get_jobid(receipt.in_reply_to_id)
@@ -67,6 +69,7 @@ RemindMe.add_command 'until' do |bot, data, status|
         
         if mins_until > 0
           rsp += " #{mins_until} minute#{mins_until > 1 ? 's' : ''}"
+          rsp.strip! unless hours_until > 0
         end
         
         bot.reply(UntilMessage + rsp)
@@ -148,7 +151,7 @@ RemindMe.run do |bot, status|
   if not errored
     reply_content = build_reply(status, %(#{Header}
 
-    #{input}))
+#{input.strip}))
     
     reciept_msg = %(#{MessageReceipt}
 Your reminder receipt is: #{1 + Random.rand(1000000000000) / Time.zone.now.to_i}
