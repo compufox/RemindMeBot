@@ -4,6 +4,7 @@ require 'rufus-scheduler'
 require 'elephrame'
 require_relative 'db_funcs'
 require_relative 'rm_constants'
+require_relative 'helpers'
 
 =begin
  TODO:
@@ -18,8 +19,6 @@ require_relative 'rm_constants'
    the beginning, leaving the @username sans instance in the body of the message)
 
 =end
-
-load_from_db
 
 RemindMe = Elephrame::Bots::Command.new '!', HelpMessage
 
@@ -39,49 +38,52 @@ end
 # adds until command
 RemindMe.add_command 'until' do |bot, data, status|
   receipt = bot.find_ancestor(status.id, 3)
-
-  # get the jobid from our db and retrieve our job from the
-  #  schedule_jobs hash
-  jobid = get_jobid(receipt.id)
-  o_job = $schedule_jobs.select { |k, v|
-    k == jobid
-  }[jobid]
   
-  # if we actually found the job
-  if not o_job.nil?
-    # o_job.original is the time we scheduled the post
-    # returns the number of seconds until the scheduled post fires
-    hours_until = ((o_job.original -
-                    Time.zone.now.localtime) / 3600).to_i # convert to int to strip frac
-    mins_until  = (((o_job.original -
-                     Time.zone.now.localtime) / 3600) % 1 * 60).round
+  unless reciept.nil?
+    # get the jobid from our db and retrieve our job from the
+    #  schedule_jobs hash
+    jobid = get_jobid(receipt.in_reply_to_id)
+    o_job = $schedule_jobs.select { |k, v|
+      k == jobid
+    }[jobid]
     
-    # reply with a message telling them how long until their reminder!
-    if mins_until > 0 || hours_until > 0
+    # if we actually found the job
+    if not o_job.nil?
+      # o_job.original is the time we scheduled the post
+      # returns the number of seconds until the scheduled post fires
+      hours_until = ((o_job.original -
+                      Time.zone.now.localtime) / 3600).to_i # convert to int to strip frac
+      mins_until  = (((o_job.original -
+                       Time.zone.now.localtime) / 3600) % 1 * 60).round
       
-      rsp = ""
-      
-      # because english is a fuck
-      if hours_until > 0
-        rsp += "#{hours_until} hour#{hours_until > 1 ? 's' : ''}"
+      # reply with a message telling them how long until their reminder!
+      if mins_until > 0 || hours_until > 0
+        
+        rsp = ""
+        
+        # because english is a fuck
+        if hours_until > 0
+          rsp += "#{hours_until} hour#{hours_until > 1 ? 's' : ''}"
+        end
+        
+        if mins_until > 0
+          rsp += " #{mins_until} minute#{mins_until > 1 ? 's' : ''}"
+        end
+        
+        bot.reply(UntilMessage + rsp)
+      else
+        bot.reply(UntilMessage + 'less than a minute!')
       end
-      
-      if mins_until > 0
-        rsp += " #{mins_until} minute#{mins_until > 1 ? 's' : ''}"
-      end
-      
-      bot.reply(UntilMessage + rsp)
     else
-      bot.reply(UntilMessage + 'less than a minute!')
+      puts 'could not find job :shrug:'
     end
-  else
-    puts 'could not find job :shrug:'
   end
 end
 
+
 RemindMe.run do |bot, status|
   # vv strips the html tags and the bot's name from the message text
-  input = status.gsub(/@#{bot.username}/, '').strip
+  input = status.content.gsub(/@#{bot.username}/, '').strip
   
   reply_content = ''
   time_wanted = Time.zone.now # get current time
@@ -145,7 +147,14 @@ RemindMe.run do |bot, status|
   end
   
   if not errored
-    reply_content = build_reply(status, input)
+    reply_content = build_reply(status, %(#{Header}
+
+    #{input}))
+    
+    reciept_msg = %(
+Your reminder receipt is: #{1 + Random.rand(1000000000000) / Time.zone.now.to_i}
+
+Reply to this with !until to get updates on when your reminder will go off!)
     
     job = Scheduler.at time_wanted.localtime, :job => true do
       RemindMe.post(reply_content,
@@ -162,45 +171,6 @@ RemindMe.run do |bot, status|
                   job.id)
     $schedule_jobs[job.id] = job
     
-    bot.reply(MessageReceipt)
+    bot.reply_with_mentions(build_reply(nil, reciept_msg))
   end
-end
-
-                                                                   
-#
-#  helper functions
-#
-
-def reschedule_toot(time, reply_id, text, visibility, job_id)
-  if time.is_a? String
-    time = ActiveSupport::TimeZone['UTC'].parse(time)
-  end
-
-  job = Scheduler.at time.localtime, :job => true do
-    RemindMe.post(text,
-                  visibility: visibility,
-                  reply_id: reply_id)
-    remove_scheduled reply_id
-  end
-
-  $schedule_jobs[job_id] = job
-end
-                                                                   
-def build_reply status, text
-  # build a string out of the mentions (may remove later)
-  mentions = status.mentions.to_a.map! { |m|
-    "@#{m.acct}" unless m.acct == RemindMe.username
-  }.join ' '
-
-  reciept_msg = %(
-Your reminder receipt is: #{1 + Random.rand(1000000000000) / Time.zone.now.to_i}
-
-Reply to this with !until to get updates on when your reminder will go off!)
-  
-  # build up the actual content of the message
-  %(@#{status.account.acct} #{mentions}
-#{MessageArray.include?(text) ? '' : Header}
-
-#{text}
-#{text == MessageReceipt ? reciept_msg : ''})
 end

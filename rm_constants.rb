@@ -5,7 +5,7 @@
 
 Time.zone = 'UTC'
 Scheduler = Rufus::Scheduler.new
-DB_Client = db_from_file
+DB_Client = db_from_file; load_from_db
 TimeWordMisspell = [ 'hr', 'min', 'sec', 'wk' ]
 TimeMisspellString = '('+ TimeWordMisspell.join('|') + ')s?\b'
 TimeWords = [ 'hour', 'minute', 'day', 'second', 'week' ] 
