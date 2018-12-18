@@ -3,30 +3,52 @@
 # Set up constants
 #
 
-RestClient = Mastodon::REST::Client.new(base_url: ENV['INSTANCE'],
-                                        bearer_token: ENV['TOKEN'])
-StreamClient = Mastodon::Streaming::Client.new(base_url: RestClient.instance().attributes['urls']['streaming_api'].gsub(/wss?/, 'https'),
-                                             bearer_token: ENV['TOKEN'])
 
-MASTO_CONFIG = {
-  access: ENV['TOKEN'],
-  acct: RestClient.verify_credentials().acct,
-  instance: ENV['INSTANCE']
-}
+#
+# post-related messages
+#
+Header = %(⏰* REMINDER *⏰)
+ErrorMessage = %(Sorry, I didn't understand that :/ Reply with !help to see usage examples!)
+ErrorMisspellMessage = %(It looks like you may have tried to abbreviate a time specification (e.g., 'minutes' to 'min', 'seconds' to 'sec')
 
-Time.zone = 'UTC'
-Scheduler = Rufus::Scheduler.new
-DB_Client = db_from_file
-TimeWordMisspell = [ 'hr', 'min', 'sec', 'wk' ]
-TimeMisspellString = '('+ TimeWordMisspell.join('|') + ')s?\b'
-TimeWords = [ 'hour', 'minute', 'day', 'second', 'week', 'tomorrow(?<tTmRel>\s(morning|afternoon|evening))?'] 
-TimeString = '('+ TimeWords.join('|') + ')s?\b'
-CommandWords = [ 'cancel', 'help', 'until' ]
-CmdString = '!(?<tCommand>' + CommandWords.join('|') + ')'
+I actually can't parse that out so please use the full spelling of the word. Please and thank you!)
+MessageReceipt = %(I'll try to remind you then!)
+ReceiptCommandInfo = %(Reply to this with !until to get updates on your reminder!
+Reply to this with !cancel to cancel your reminder.)
+CancelApproveMessage = %(Your reminder has been canceled!)
+CancelDenyMessage = %(Oh no, I couldn't cancel that reminder :/
 
-SQLInsertStmt = DB_Client.prepare "INSERT INTO #{$db_data[:table]} VALUES (?, ?, ?, ?, ?, ?)"
+If you believe this to be in error please try again by replying to the reminder confirmation toot with !cancel)
+HelpMessage = %(I have two ways for you to use me, relative and absolute:
+1- in 45 minutes feed dog
+2- at 16:20 EDT blaze it
+
+(pst: you don't need 'in' or 'at' either!)
+
+if using #1 I recognize minutes, seconds, hours, days and weeks
+if using #2 I need at least hours, and at most HH:MM:SS. but I always need a 3 letter timezone (defaults to UTC)
+
+If you want to cancel a reminder just reply to the message receipt with !cancel
+Reply to your receipt with !until to get a countdown for your reminder!)
+AppreciationMessage = %(No problem :3)
+UntilMessage = %(Your reminder will be sent in )
+
+#
+# general constants
+#
 
 $schedule_jobs = {}
+
+RemindMe = Elephrame::Bots::Command.new '!', HelpMessage
+Time.zone = 'UTC'
+Scheduler = Rufus::Scheduler.new
+DB_Client = db_from_file; load_from_db
+TimeWordMisspell = [ 'hr', 'min', 'sec', 'wk' ]
+TimeMisspellString = '('+ TimeWordMisspell.join('|') + ')s?\b'
+TimeWords = [ 'hour', 'minute', 'day', 'second', 'week' ] 
+TimeString = '('+ TimeWords.join('|') + ')s?\b'
+
+SQLInsertStmt = DB_Client.prepare "INSERT INTO #{$db_data[:table]} VALUES (?, ?, ?, ?, ?, ?)"
 
 #
 # compiles the regexes for later use
@@ -49,49 +71,6 @@ AbsoluteRegexp = Regexp.new(/
 (?<tAPM>(A|P)M)?               # same for AM\PM
 \s?                            # white space
 (?<TZ>[[:alpha:]]{3,})?/ix)     # gets timezone if it's there
-CommandRegexp = Regexp.new(/
-.* #{CmdString} .*
-/ix)
 ThanksRegexp = Regexp.new(/
 \s+(thanks?( you)?)
 /xi)
-                               
-#
-# post-related messages
-#
-Header = %(⏰* REMINDER *⏰)
-ErrorMessage = %(Sorry, I didn't understand that :/
-
-I understand formats like: 
-
-- 1 minute 30 seconds Hello!
-- 16:20 EDT blaze it
-- at 6:30:30 UTC get dinner
-- in 3 hours 30 minutes feed dog)
-ErrorMisspellMessage = %(It looks like you may have tried to abbreviate a time specification (e.g., 'minutes' to 'min', 'seconds' to 'sec')
-
-I actually can't parse that out so please use the full spelling of the word. Please and thank you!)
-MessageReceipt = %(I'll try to remind you then!)
-CancelApproveMessage = %(Your reminder has been canceled!)
-CancelDenyMessage = %(Oh no, I couldn't cancel that reminder :/
-
-If you believe this to be in error please try again by replying to the reminder confirmation toot with !cancel)
-HelpMessage = %(I have two ways for you to use me, relative and absolute:
-1- in 45 minutes feed dog
-2- at 16:20 EDT blaze it
-
-(pst: you don't need 'in' or 'at' either!)
-
-if using #1 I recognize minutes, seconds, hours, days and weeks
-if using #2 I need at least hours, and at most HH:MM:SS. but I always need a 3 letter timezone (defaults to UTC)
-
-If you want to cancel a reminder just reply to the message receipt with !cancel
-Reply to your receipt with !until to get a countdown for your reminder!)
-AppreciationMessage = %(No problem :3)
-UntilMessage = %(Your reminder will be sent in )
-
-MessageArray = [ ErrorMessage, ErrorMisspellMessage, MessageReceipt,
-                 CancelDenyMessage, CancelApproveMessage, HelpMessage,
-                 AppreciationMessage, UntilMessage
-               ]
-

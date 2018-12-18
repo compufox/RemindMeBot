@@ -1,13 +1,13 @@
 # coding: utf-8
 require 'active_support/core_ext/numeric/time'
 require 'rufus-scheduler'
-require 'mastodon'
+require 'elephrame'
+require_relative 'helpers'
 require_relative 'db_funcs'
 require_relative 'rm_constants'
 
 =begin
  TODO:
-  add way to cancel commands
   (set up a hash table with the toot id being the uid of the job?
    if a user replies to that receipt toot with 'cancel' we just cancel the job
    confirm to the user that the toot has been deleted and then remove it from the hash
@@ -20,89 +20,82 @@ require_relative 'rm_constants'
 
 =end
 
-#
-# Set message function for parsing/building replies
-#
 
-def parse_message input_toot
+# adds cancel command
+RemindMe.add_command 'cancel' do |bot, data, status|
+  receipt = bot.find_ancestor(status.id, 3)
+
+  unless receipt.nil?
+    if cancel_scheduled(receipt.in_reply_to_id,
+                        status.account.acct)
+      bot.reply(CancelApproveMessage)
+    else
+      bot.reply(CancelDenyMessage)
+    end
+  end
+end
+
+
+# adds until command
+RemindMe.add_command 'until' do |bot, data, status|
+  receipt = bot.find_ancestor(status.id, 3)
+  
+  unless receipt.nil?
+    # get the jobid from our db and retrieve our job from the
+    #  schedule_jobs hash
+    jobid = get_jobid(receipt.in_reply_to_id)
+    o_job = $schedule_jobs.select { |k, v|
+      k == jobid
+    }[jobid]
+    
+    # if we actually found the job
+    if not o_job.nil?
+      # o_job.original is the time we scheduled the post
+      # returns the number of seconds until the scheduled post fires
+      hours_until = ((o_job.original -
+                      Time.zone.now.localtime) / 3600).to_i # convert to int to strip frac
+      mins_until  = (((o_job.original -
+                       Time.zone.now.localtime) / 3600) % 1 * 60).round
+      
+      # reply with a message telling them how long until their reminder!
+      if mins_until > 0 || hours_until > 0
+        
+        rsp = ""
+        
+        # because english is a fuck
+        if hours_until > 0
+          rsp += "#{hours_until} hour#{hours_until > 1 ? 's' : ''}"
+        end
+        
+        if mins_until > 0
+          rsp += " #{mins_until} minute#{mins_until > 1 ? 's' : ''}"
+          rsp.strip! unless hours_until > 0
+        end
+        
+        bot.reply(UntilMessage + rsp)
+      else
+        bot.reply(UntilMessage + 'less than a minute!')
+      end
+    else
+      puts 'could not find job :shrug:'
+    end
+  end
+end
+
+
+RemindMe.run do |bot, status|
   # vv strips the html tags and the bot's name from the message text
-  input = input_toot.status.content.gsub(/<("[^"]*"|'[^']*'|[^'">])*>/, '').gsub(/@#{MASTO_CONFIG[:acct]}/, '').chomp
-
-  print input
+  input = status.content.gsub(/@#{bot.username}/, '').strip
   
   reply_content = ''
   time_wanted = Time.zone.now # get current time
-
 
   
   case input
 
   # when we see that the user may have used shorthand :/
   when MisspellRegexp
-    build_post_reply input_toot, ErrorMisspellMessage
-
-
-  # if we see a command we should run it
-  when CommandRegexp
-    errored = true # we set this flag so we don't accidentally schedule our command
-    
-    match = CommandRegexp.match(input)
-
-    case match[:tCommand]
-
-    when 'cancel'
-      parent = RestClient.status(input_toot.status.in_reply_to_id)
-      if cancel_scheduled parent.in_reply_to_id, input_toot.account.acct
-        build_post_reply input_toot, CancelApproveMessage
-      else
-        build_post_reply input_toot, CancelDenyMessage
-      end
-
-    when 'help'
-      build_post_reply input_toot, HelpMessage
-
-    when 'until'
-      # get the grandparent of our input status
-      ancestor = RestClient.status(RestClient.status(input_toot.status.in_reply_to_id).in_reply_to_id)
-
-      # get the jobid from our db and retrieve our job from the
-      #  schedule_jobs hash
-      jobid = get_jobid(ancestor.id)
-      o_job = $schedule_jobs.select { |k, v|
-        k == jobid
-      }[jobid]
-
-      # if we actually found the job
-      if not o_job.nil?
-        # o_job.original is the time we scheduled the post
-        # returns the number of seconds until the scheduled post fires
-        hours_until = ((o_job.original - Time.zone.now.localtime) / 3600).to_i # convert to int to strip frac
-        mins_until  = (((o_job.original - Time.zone.now.localtime) / 3600) % 1 * 60).round
-        
-        # reply with a message telling them how long until their reminder!
-        if mins_until > 0 || hours_until > 0
-
-          rsp = ""
-
-          # because english is a fuck
-          if hours_until > 0
-            rsp += "#{hours_until} hour#{hours_until > 1 ? 's' : ''}"
-          end
-
-          if mins_until > 0
-            rsp += " #{mins_until} minute#{mins_until > 1 ? 's' : ''}"
-          end
-          
-          build_post_reply input_toot, UntilMessage + rsp
-        else
-          build_post_reply input_toot, UntilMessage + 'less than a minute!'
-        end
-      else
-        puts 'could not find job :shrug:'
-      end
-      
-    end
-        
+    bot.reply(ErrorMisspellMessage)
 
     
   # when we match the relative regexp
@@ -123,7 +116,9 @@ def parse_message input_toot
   # when we match the absolute regexp
   when AbsoluteRegexp
     match = AbsoluteRegexp.match(input) # get the match data for removing
-    match_ar = match.to_a; match_ar.shift # go ahead and turn it into an array for easy looping (and remove base input)
+    # go ahead and turn it into an array for
+    #  easy looping (and remove base input)
+    match_ar = match.to_a; match_ar.shift 
     
     match_ar.each do |m|
       input.sub!(m, '') unless m.nil? # remove string from input
@@ -140,102 +135,44 @@ def parse_message input_toot
     
   # if someone says thanks then we should respond :3
   when ThanksRegexp
-    build_post_reply input_toot, AppreciationMessage
-    errored = true # this is to sneak past the check down below so we don't send a few extra messages ;P
+    bot.reply(AppreciationMessage)
+
+    # this is to sneak past the check down below so we don't
+    #  send a few extra messages ;P
+    errored = true 
     
   else
     # if we get here then that means we didn't match any regexp
     #  and that makes us sad :(
+    bot.reply(ErrorMessage)
     errored = true
-    build_post_reply input_toot, ErrorMessage
   end
   
   if not errored
-    reply_content = build_reply(input_toot.status, input_toot.account.acct, input.lstrip.chomp)
+    reply_content = build_reply(status, %(#{Header}
+
+#{input.strip}))
+    
+    reciept_msg = %(#{MessageReceipt}
+Your reminder receipt is: #{1 + Random.rand(1000000000000) / Time.zone.now.to_i}
+
+#{ReceiptCommandInfo})
     
     job = Scheduler.at time_wanted.localtime, :job => true do
-      post_reply(reply_content, input_toot.status.visibility, input_toot.status.id)
-      remove_scheduled input_toot.status.id
+      RemindMe.post(reply_content,
+                    visibility: status.visibility,
+                    reply_id: status.id)
+      remove_scheduled status.id
     end
 
     write_db_data(time_wanted,
-                  input_toot.status.id,
+                  status.id,
                   reply_content,
-                  input_toot.status.visibility,
-                  input_toot.account.acct,
+                  status.visibility,
+                  status.account.acct,
                   job.id)
     $schedule_jobs[job.id] = job
     
-    build_post_reply input_toot, MessageReceipt
+    bot.reply_with_mentions(build_reply(nil, reciept_msg))
   end
-end
-
-                                                                   
-#
-#  helper functions
-#
-
-def reschedule_toot(time, reply_id, text, visibility, job_id)
-  if time.is_a? String
-    time = ActiveSupport::TimeZone['UTC'].parse(time)
-  end
-
-  job = Scheduler.at time.localtime, :job => true do
-    post_reply(text, visibility, reply_id)
-    remove_scheduled reply_id
-  end
-
-  $schedule_jobs[job_id] = job
-end
-                                                                   
-def build_reply status, acct, text
-  # build a string out of the mentions (may remove later)
-  mentions = status.mentions.to_a.map! { |m|
-    "@#{m.acct}" unless m.acct == MASTO_CONFIG[:acct]
-  }.join ' '
-
-  # build up the actual content of the message
-  %(@#{acct} #{mentions}
-#{MessageArray.include?(text) ? '' : Header}
-
-#{text}
-
-#{text == MessageReceipt ? "Your reminder receipt is: #{1 + Random.rand(10000000000000) / Time.zone.now.to_i}" : ''}
-
-#{text == MessageReceipt ? 'Reply to this with !until to get updates on when your reminder will go off!' : ''})
-end
-
-
-def build_post_reply toot, text
-  post_reply(build_reply(toot.status, toot.account.acct, text),
-             toot.status.visibility,
-             toot.status.id)
-end
-
-
-def post_reply text, visibility, reply_to
-
-  options = {
-
-    visibility: visibility,
-    in_reply_to_id: reply_to,
-#    spoiler_text: toot.status.spoiler_text || ''   <- doesn't work in mastodon-api as of right now
-
-  }
-  
-  RestClient.create_status text, options
-end
-
-#
-# set up a loop to catch mentions
-#
-
-#load up old toots
-load_from_db
-
-StreamClient.user do |toot|
-  next unless toot.kind_of? Mastodon::Notification
-  next unless toot.type == 'mention'
-
-  parse_message toot
 end
