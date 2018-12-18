@@ -1,7 +1,7 @@
 # coding: utf-8
 require 'active_support/core_ext/numeric/time'
 require 'rufus-scheduler'
-require 'mastodon'
+require 'elephrame'
 require_relative 'db_funcs'
 require_relative 'rm_constants'
 
@@ -20,15 +20,69 @@ require_relative 'rm_constants'
 
 =end
 
+RemindMe = Elephrame::Bots::Command.new '!', HelpMessage
+
 #
 # Set message function for parsing/building replies
 #
 
-def parse_message input_toot
-  # vv strips the html tags and the bot's name from the message text
-  input = input_toot.status.content.gsub(/<("[^"]*"|'[^']*'|[^'">])*>/, '').gsub(/@#{MASTO_CONFIG[:acct]}/, '').chomp
+RemindMe.add_command 'cancel' do |bot, data, status|
+  receipt = bot.find_ancestor(status.id, 2)
+  
+  if cancel_scheduled(receipt.in_reply_to_id,
+                      receipt.account.acct)
+    bot.reply(CancelApproveMessage)
+  else
+    bot.reply(CancelDenyMessage)
+  end
+end
 
-  print input
+RemindMe.add_command 'until' do |bot, data, status|
+  receipt = bot.find_ancestor(status.id, 3)
+
+  # get the jobid from our db and retrieve our job from the
+  #  schedule_jobs hash
+  jobid = get_jobid(ancestor.id)
+  o_job = $schedule_jobs.select { |k, v|
+    k == jobid
+  }[jobid]
+  
+  # if we actually found the job
+  if not o_job.nil?
+    # o_job.original is the time we scheduled the post
+    # returns the number of seconds until the scheduled post fires
+    hours_until = ((o_job.original -
+                    Time.zone.now.localtime) / 3600).to_i # convert to int to strip frac
+    mins_until  = (((o_job.original -
+                     Time.zone.now.localtime) / 3600) % 1 * 60).round
+    
+    # reply with a message telling them how long until their reminder!
+    if mins_until > 0 || hours_until > 0
+      
+      rsp = ""
+      
+      # because english is a fuck
+      if hours_until > 0
+        rsp += "#{hours_until} hour#{hours_until > 1 ? 's' : ''}"
+      end
+      
+      if mins_until > 0
+        rsp += " #{mins_until} minute#{mins_until > 1 ? 's' : ''}"
+      end
+      
+      bot.reply(UntilMessage + rsp)
+    else
+      bot.reply(UntilMessage + 'less than a minute!')
+    end
+  else
+    puts 'could not find job :shrug:'
+  end
+  
+end
+
+RemindMe.on_reply do |bot, status|
+  # vv strips the html tags and the bot's name from the message text
+  input = status.gsub(/@#{bot.username}/, '').stip
   
   reply_content = ''
   time_wanted = Time.zone.now # get current time
@@ -40,69 +94,6 @@ def parse_message input_toot
   # when we see that the user may have used shorthand :/
   when MisspellRegexp
     build_post_reply input_toot, ErrorMisspellMessage
-
-
-  # if we see a command we should run it
-  when CommandRegexp
-    errored = true # we set this flag so we don't accidentally schedule our command
-    
-    match = CommandRegexp.match(input)
-
-    case match[:tCommand]
-
-    when 'cancel'
-      parent = RestClient.status(input_toot.status.in_reply_to_id)
-      if cancel_scheduled parent.in_reply_to_id, input_toot.account.acct
-        build_post_reply input_toot, CancelApproveMessage
-      else
-        build_post_reply input_toot, CancelDenyMessage
-      end
-
-    when 'help'
-      build_post_reply input_toot, HelpMessage
-
-    when 'until'
-      # get the grandparent of our input status
-      ancestor = RestClient.status(RestClient.status(input_toot.status.in_reply_to_id).in_reply_to_id)
-
-      # get the jobid from our db and retrieve our job from the
-      #  schedule_jobs hash
-      jobid = get_jobid(ancestor.id)
-      o_job = $schedule_jobs.select { |k, v|
-        k == jobid
-      }[jobid]
-
-      # if we actually found the job
-      if not o_job.nil?
-        # o_job.original is the time we scheduled the post
-        # returns the number of seconds until the scheduled post fires
-        hours_until = ((o_job.original - Time.zone.now.localtime) / 3600).to_i # convert to int to strip frac
-        mins_until  = (((o_job.original - Time.zone.now.localtime) / 3600) % 1 * 60).round
-        
-        # reply with a message telling them how long until their reminder!
-        if mins_until > 0 || hours_until > 0
-
-          rsp = ""
-
-          # because english is a fuck
-          if hours_until > 0
-            rsp += "#{hours_until} hour#{hours_until > 1 ? 's' : ''}"
-          end
-
-          if mins_until > 0
-            rsp += " #{mins_until} minute#{mins_until > 1 ? 's' : ''}"
-          end
-          
-          build_post_reply input_toot, UntilMessage + rsp
-        else
-          build_post_reply input_toot, UntilMessage + 'less than a minute!'
-        end
-      else
-        puts 'could not find job :shrug:'
-      end
-      
-    end
-        
 
     
   # when we match the relative regexp

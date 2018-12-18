@@ -3,26 +3,13 @@
 # Set up constants
 #
 
-RestClient = Mastodon::REST::Client.new(base_url: ENV['INSTANCE'],
-                                        bearer_token: ENV['TOKEN'])
-StreamClient = Mastodon::Streaming::Client.new(base_url: RestClient.instance().attributes['urls']['streaming_api'].gsub(/wss?/, 'https'),
-                                             bearer_token: ENV['TOKEN'])
-
-MASTO_CONFIG = {
-  access: ENV['TOKEN'],
-  acct: RestClient.verify_credentials().acct,
-  instance: ENV['INSTANCE']
-}
-
 Time.zone = 'UTC'
 Scheduler = Rufus::Scheduler.new
 DB_Client = db_from_file
 TimeWordMisspell = [ 'hr', 'min', 'sec', 'wk' ]
 TimeMisspellString = '('+ TimeWordMisspell.join('|') + ')s?\b'
-TimeWords = [ 'hour', 'minute', 'day', 'second', 'week', 'tomorrow(?<tTmRel>\s(morning|afternoon|evening))?'] 
+TimeWords = [ 'hour', 'minute', 'day', 'second', 'week' ] 
 TimeString = '('+ TimeWords.join('|') + ')s?\b'
-CommandWords = [ 'cancel', 'help', 'until' ]
-CmdString = '!(?<tCommand>' + CommandWords.join('|') + ')'
 
 SQLInsertStmt = DB_Client.prepare "INSERT INTO #{$db_data[:table]} VALUES (?, ?, ?, ?, ?, ?)"
 
@@ -49,9 +36,6 @@ AbsoluteRegexp = Regexp.new(/
 (?<tAPM>(A|P)M)?               # same for AM\PM
 \s?                            # white space
 (?<TZ>[[:alpha:]]{3,})?/ix)     # gets timezone if it's there
-CommandRegexp = Regexp.new(/
-.* #{CmdString} .*
-/ix)
 ThanksRegexp = Regexp.new(/
 \s+(thanks?( you)?)
 /xi)
