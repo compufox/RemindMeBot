@@ -12,7 +12,7 @@ GEM
     concurrent-ruby (1.0.5)
     domain_name (0.5.20180417)
       unf (>= 0.0.5, < 1.0.0)
-    elephrame (0.4.3)
+    elephrame (0.4.4)
       moostodon (~> 0.2.0)
       rufus-scheduler
     et-orbi (1.0.7)
@@ -52,7 +52,7 @@ PLATFORMS
 
 DEPENDENCIES
   activesupport
-  elephrame (~> 0.4.3)
+  elephrame (~> 0.4.4)
   mysql2
   rufus-scheduler
   sqlite3
