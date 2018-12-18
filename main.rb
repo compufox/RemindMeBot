@@ -150,10 +150,10 @@ RemindMe.run do |bot, status|
 
     #{input}))
     
-    reciept_msg = %(
+    reciept_msg = %(#{MessageReceipt}
 Your reminder receipt is: #{1 + Random.rand(1000000000000) / Time.zone.now.to_i}
 
-Reply to this with !until to get updates on when your reminder will go off!)
+#{ReceiptCommandInfo})
     
     job = Scheduler.at time_wanted.localtime, :job => true do
       RemindMe.post(reply_content,

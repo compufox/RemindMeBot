@@ -13,6 +13,8 @@ ErrorMisspellMessage = %(It looks like you may have tried to abbreviate a time s
 
 I actually can't parse that out so please use the full spelling of the word. Please and thank you!)
 MessageReceipt = %(I'll try to remind you then!)
+ReceiptCommandInfo = %(Reply to this with !until to get updates on your reminder!
+Reply to this with !cancel to cancel your reminder.)
 CancelApproveMessage = %(Your reminder has been canceled!)
 CancelDenyMessage = %(Oh no, I couldn't cancel that reminder :/
 
