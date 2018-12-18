@@ -44,14 +44,7 @@ ThanksRegexp = Regexp.new(/
 # post-related messages
 #
 Header = %(⏰* REMINDER *⏰)
-ErrorMessage = %(Sorry, I didn't understand that :/
-
-I understand formats like: 
-
-- 1 minute 30 seconds Hello!
-- 16:20 EDT blaze it
-- at 6:30:30 UTC get dinner
-- in 3 hours 30 minutes feed dog)
+ErrorMessage = %(Sorry, I didn't understand that :/ Reply with !help to see usage examples!)
 ErrorMisspellMessage = %(It looks like you may have tried to abbreviate a time specification (e.g., 'minutes' to 'min', 'seconds' to 'sec')
 
 I actually can't parse that out so please use the full spelling of the word. Please and thank you!)
